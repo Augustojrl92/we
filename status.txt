@@ -1,0 +1,91 @@
+
+Nivel 1: Servidor TCP básico que acepta conexiones y responde. ✅
+Nivel 2: Parseo simple de método y ruta HTTP, respuestas básicas según método. ✅
+Nivel 3: Servir archivos estáticos. ✅
+Nivel 4: Manejo de múltiples conexiones con poll(). ✅
+Nivel 5: Procesamiento avanzado de peticiones (headers, body, chunked). ✅
+Nivel 6: Configuración flexible (puertos, rutas, errores personalizados). ⚠️ PARCIAL
+Nivel 7: Ejecución de CGI. ✅ <--- COMPLETADO
+Nivel 8: Gestión de uploads y sesiones. ❌
+Nivel 9: Resiliencia, pruebas de estrés, compatibilidad con navegadores. ⚠️ PARCIAL
+Nivel 10: Documentación, comparación con NGINX, entrega final. ❌
+
+
+Error 414 y 413
+
+⚠️ Problemas Identificados vs Requisitos
+✅ RESUELTOS (Anteriormente críticos)
+1. ✅ I/O No Bloqueante - RESUELTO
+Solución: Implementado correctamente con O_NONBLOCK en sockets y archivos.
+
+2. ✅ recv() Sin Bloqueo - RESUELTO  
+Solución: Cliente maneja EAGAIN/EWOULDBLOCK correctamente.
+
+3. ✅ CGI Completamente Implementado - RESUELTO
+Solución: CGIHandler integrado en WebServer, soporta Python y PHP.
+
+❌ CRÍTICOS PENDIENTES
+4. ❌ Múltiples Puertos (Requisito 2)
+Problema: Solo escucha en un puerto. Necesita soporte para múltiples servers.
+
+5. ❌ Upload de Archivos (Requisito 2)
+Problema: No implementado multipart/form-data parsing.
+
+❌ GRAVES PENDIENTES
+6. ❌ Client Body Size Limits
+Problema: No hay límites configurables para tamaño de peticiones.
+
+7. ❌ Error Pages Personalizadas
+Problema: Solo usa páginas por defecto, no lee desde configuración.
+
+✅ MEDIOS RESUELTOS
+8. ✅ Chunked Encoding - IMPLEMENTADO
+9. ✅ Estructura Modular - MEJORADA
+Todo el procesamiento ya no está en un método gigante.
+
+✅ Aspectos Correctos
+✅ Arquitectura Sólida
+✓ poll() único: Usa correctamente un solo poll() para toda la I/O
+✓ Parsing HTTP: Las clases Request/Response funcionan correctamente
+✓ Métodos HTTP: GET, POST, DELETE implementados
+✓ Configuración: Parser de config funciona
+✓ Makefile: Tiene todas las reglas requeridas (clean, fclean, re)
+✓ CGI: Python y PHP funcionando correctamente
+✓ I/O No-bloqueante: Implementado correctamente
+✓ Chunked encoding: Implementado y funcionando
+✓ Manejo de errores: 404, 500, etc. implementados
+✓ Content-Type: Detección automática por extensión
+🎯 Estado vs Requisitos del Checklist
+Requisito	                Estado	    Criticidad
+Poll() único	            ✅	        -
+I/O no bloqueante	        ✅	        CRÍTICA (RESUELTO)
+CGI	                        ✅	        CRÍTICA (RESUELTO)
+Múltiples puertos	        ❌	        CRÍTICA
+Upload archivos	            ❌	        CRÍTICA
+Chunked encoding	        ✅	        Media (RESUELTO)
+Keep-alive	                ❌	        Media
+Error handling	            ✅	        Media (RESUELTO)
+Client body limits          ❌          Alta
+Error pages custom          ❌          Media
+🔥 Problemas que Causarían Fallo Inmediato
+❌ Múltiples puertos → Requisito no cumplido (configuración avanzada)
+❌ Upload de archivos → Requisito no cumplido (funcionalidad básica)
+⚠️ Client body size limits → Podría causar problemas de memoria
+
+💡 Conclusión
+El proyecto ha avanzado significativamente desde la última evaluación:
+
+✅ LOGROS IMPORTANTES:
+- CGI completamente funcional (Python y PHP probados)
+- I/O no-bloqueante implementado correctamente
+- Arquitectura robusta con poll() único
+- Manejo correcto de requests/responses HTTP
+- Chunked encoding funcionando
+
+❌ FALTA PARA APROBACIÓN:
+- Múltiples puertos (CRÍTICO - requisito obligatorio)
+- Upload de archivos (CRÍTICO - funcionalidad básica)
+- Límites de body size (ALTO - seguridad)
+
+🎯 ESTADO ACTUAL: 75% completado
+El servidor funcionaría para casos básicos y CGI, pero fallaría en evaluación por no cumplir requisitos críticos de múltiples puertos y upload de archivos.

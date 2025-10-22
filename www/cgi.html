@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>🧪 Probador de CGI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .test-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+        }
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .btn.python {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+        .btn.php {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+        }
+        .form-test {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .submit-btn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .submit-btn:hover {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Probador de CGI WebServ</h1>
+        
+        <!-- Scripts simples -->
+        <div class="test-section">
+            <h2>🚀 Scripts Simples</h2>
+            <p>Prueba estos scripts básicos para verificar que CGI funciona:</p>
+            
+            <div class="test-buttons">
+                <a href="/cgi-bin/hello.py" class="btn python">
+                    🐍 Python con Info
+                </a>
+                <a href="/cgi-bin/hello.php" class="btn php">
+                    🐘 PHP Simple
+                </a>
+            </div>
+        </div>
+
+        <!-- Pruebas con parámetros GET -->
+        <div class="test-section">
+            <h2>🔗 Pruebas con Parámetros GET</h2>
+            <p>Haz clic para probar CGI con parámetros en la URL:</p>
+            
+            <div class="test-buttons">
+                <a href="/cgi-bin/hello.py?nombre=Juan&edad=25" class="btn python">
+                    🧪 Con Parámetros
+                </a>
+            </div>
+        </div>
+
+        <!-- Formulario de prueba -->
+        <div class="test-section">
+            <h2>📝 Prueba de Formulario POST</h2>
+            <p>Envía datos a través de un formulario:</p>
+            
+            <div class="form-test">
+                <form action="/cgi-bin/form_handler.py" method="POST">
+                    <label for="nombre">👤 Tu nombre:</label>
+                    <input type="text" id="nombre" name="nombre" placeholder="Escribe tu nombre">
+                    
+                    <label for="email">📧 Tu email:</label>
+                    <input type="email" id="email" name="email" placeholder="tu@email.com">
+                    
+                    <label for="mensaje">💬 Tu mensaje:</label>
+                    <textarea id="mensaje" name="mensaje" rows="4" placeholder="Escribe algo interesante..."></textarea>
+                    
+                    <label for="color">🎨 Tu color favorito:</label>
+                    <select id="color" name="color">
+                        <option value="azul">🔵 Azul</option>
+                        <option value="rojo">🔴 Rojo</option>
+                        <option value="verde">🟢 Verde</option>
+                        <option value="amarillo">🟡 Amarillo</option>
+                    </select>
+                    
+                    <button type="submit" class="submit-btn">🚀 Enviar Formulario</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información -->
+        <div class="test-section">
+            <h2>ℹ️ Información</h2>
+            <p><strong>¿Qué es CGI?</strong></p>
+            <p>CGI (Common Gateway Interface) permite que el servidor web ejecute programas externos y devuelva el resultado al navegador. Es perfecto para crear páginas dinámicas.</p>
+            
+            <p><strong>Scripts disponibles:</strong></p>
+            <ul style="text-align: left;">
+                <li><code>simple.py</code> - El script más básico posible</li>
+                <li><code>hello.py</code> - Muestra información básica del servidor</li>
+                <li><code>hello.php</code> - Versión PHP simple</li>
+                <li><code>form_handler.py</code> - Procesa formularios</li>
+                <li><code>test.py</code> - Script completo con todas las variables</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
