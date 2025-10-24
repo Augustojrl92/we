@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Successful</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e272e, #2f3640);
+      color: #f5f6fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: rgba(255,255,255,0.08);
+      padding: 2rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0, 168, 255, 0.2);
+      text-align: center;
+      width: 380px;
+    }
+    h1 { color: #00a8ff; font-size: 2rem; margin-bottom: 1rem; }
+    p { color: #dcdde1; margin: 0.3rem 0; }
+    a {
+      display: inline-block;
+      margin-top: 1rem;
+      background: #00a8ff;
+      color: white;
+      padding: 0.6rem 1.4rem;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: background 0.3s ease;
+    }
+    a:hover { background: #0097e6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>✅ Upload Successful</h1>
+    <p>File saved as: <b>{{FILENAME}}</b></p>
+    <p>Size: {{SIZE}} bytes</p>
+    <a href="/upload.html">⬅️ Upload another file</a>
+  </div>
+</body>
+</html>

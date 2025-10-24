@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: fmorenil <fmorenil@student.42.fr>          +#+  +:+       +#+         #
+#    By: aurodrig <aurodrig@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/07/27 15:55:23 by fvizcaya          #+#    #+#              #
-#    Updated: 2025/10/14 19:44:16 by fmorenil         ###   ########.fr        #
+#    Updated: 2025/10/23 23:44:21 by aurodrig         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,6 +24,7 @@ SRC += src/Client.cpp
 SRC += src/CGIHandler.cpp
 SRC += src/config/fileParsing.cpp
 SRC += src/Server.cpp
+SRC += src/UploadHandler.cpp
 #SRC += src/test_cgi.cpp
 
 OBJ = $(SRC:.cpp=.o)

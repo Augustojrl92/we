@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: fmorenil <fmorenil@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aurodrig <aurodrig@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/11 00:11:28 by fmorenil          #+#    #+#             */
-/*   Updated: 2025/10/16 20:09:49 by fmorenil         ###   ########.fr       */
+/*   Updated: 2025/10/23 00:29:55 by aurodrig         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,26 +23,47 @@ Client::~Client() {
 
 bool Client::receiveData() {
     char buffer[4096];
-
     ssize_t bytes_received = recv(fd, buffer, sizeof(buffer), MSG_DONTWAIT);
 
     if (bytes_received > 0) {
         request_buffer.append(buffer, bytes_received);
 
-        if (request_buffer.find("\r\n\r\n") != std::string::npos) {
-            request_completed = true;
+        // Buscar fin de headers
+        size_t header_end = request_buffer.find("\r\n\r\n");
+        if (header_end != std::string::npos) {
+            // Si ya encontramos el fin de los headers, verificar si hay Content-Length
+            std::string headers = request_buffer.substr(0, header_end);
+            size_t cl_pos = headers.find("Content-Length:");
+            size_t body_start = header_end + 4;
+
+            if (cl_pos != std::string::npos) {
+                // Extraer el número del Content-Length
+                cl_pos += 15;
+                while (cl_pos < headers.size() && isspace(headers[cl_pos])) cl_pos++;
+                size_t end_pos = headers.find("\r\n", cl_pos);
+                std::string cl_value = headers.substr(cl_pos, end_pos - cl_pos);
+                int content_length = atoi(cl_value.c_str());
+
+                // Si ya recibimos todo el cuerpo, marcamos como completa
+                if (request_buffer.size() >= body_start + content_length)
+                    request_completed = true;
+            } else {
+                // Si no hay Content-Length (por ejemplo GET), ya está completa
+                request_completed = true;
+            }
         }
-        return (true);
-    } else if (bytes_received == 0) {
-        // Connection closed by client
-        return (false);
-    } else {
-        // bytes_received == -1
-        // For non-blocking sockets, no data available is not an error
-        // poll() will tell us when more data is ready
-        return (true);
+        return true;
+    } 
+    else if (bytes_received == 0) {
+        // Cliente cerró conexión
+        return false;
+    } 
+    else {
+        // recv() == -1: no hay datos ahora, volveremos cuando poll() avise
+        return true;
     }
 }
+
 
 bool Client::isRequestComplete() {
     return request_completed;

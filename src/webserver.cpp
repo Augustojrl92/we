@@ -23,6 +23,8 @@
 #include <vector>
 #include <fstream>
 #include "../includes/config.hpp"
+#include "../includes/UploadHandler.hpp"
+
 
 bool WebServer::loadConfig(const std::string &path)
 {
@@ -319,60 +321,62 @@ void WebServer::processClientRequest(int client_fd) {
         }
     }
     else if (req.method == "POST") {
-        // Verificar si es un script CGI
-        if (CGIHandler::isCGIScript(file_path)) {
-            CGIHandler cgi(req, file_path);
-            std::string cgi_output = cgi.execute();
-            
-            if (!cgi_output.empty()) {
-                // Parsear output CGI para separar headers del body
-                size_t header_end = cgi_output.find("\r\n\r\n");
-                if (header_end == std::string::npos) {
-                    header_end = cgi_output.find("\n\n");
-                    if (header_end != std::string::npos) {
-                        header_end += 2;
-                    }
-                } else {
-                    header_end += 4;
-                }
-                
-                if (header_end != std::string::npos) {
-                    std::string cgi_headers = cgi_output.substr(0, header_end);
-                    res.body = cgi_output.substr(header_end);
-                    
-                    // Parsear headers CGI
-                    std::istringstream header_stream(cgi_headers);
-                    std::string line;
-                    while (std::getline(header_stream, line)) {
-                        size_t colon_pos = line.find(':');
-                        if (colon_pos != std::string::npos) {
-                            std::string key = line.substr(0, colon_pos);
-                            std::string value = line.substr(colon_pos + 1);
-                            // Remover espacios
-                            while (!value.empty() && value[0] == ' ') value.erase(0, 1);
-                            while (!value.empty() && (value[value.length()-1] == '\r' || value[value.length()-1] == '\n')) value.erase(value.length()-1);
-                            res.headers[key] = value;
-                        }
-                    }
-                } else {
-                    res.body = cgi_output;
-                }
-                res.status_code = 200;
+    // Verificar si es un script CGI
+    if (CGIHandler::isCGIScript(file_path)) {
+        CGIHandler cgi(req, file_path);
+        std::string cgi_output = cgi.execute();
+
+        if (!cgi_output.empty()) {
+            size_t header_end = cgi_output.find("\r\n\r\n");
+            if (header_end == std::string::npos) {
+                header_end = cgi_output.find("\n\n");
+                if (header_end != std::string::npos)
+                    header_end += 2;
             } else {
-                res.status_code = 500;
-                res.body = "<h1>500 Internal Server Error - CGI Failed</h1>";
+                header_end += 4;
             }
+
+            if (header_end != std::string::npos) {
+                std::string cgi_headers = cgi_output.substr(0, header_end);
+                res.body = cgi_output.substr(header_end);
+
+                std::istringstream header_stream(cgi_headers);
+                std::string line;
+                while (std::getline(header_stream, line)) {
+                    size_t colon_pos = line.find(':');
+                    if (colon_pos != std::string::npos) {
+                        std::string key = line.substr(0, colon_pos);
+                        std::string value = line.substr(colon_pos + 1);
+                        while (!value.empty() && value[0] == ' ') value.erase(0, 1);
+                        while (!value.empty() && 
+                              (value[value.length()-1] == '\r' || value[value.length()-1] == '\n'))
+                            value.erase(value.length()-1);
+                        res.headers[key] = value;
+                    }
+                }
+            } else {
+                res.body = cgi_output;
+            }
+            res.status_code = 200;
         } else {
-            // POST para archivos normales
-            if (writeFileNonBlocking(file_path, req.body)) {
-                res.body = "<h1>File created with POST</h1>";
-                res.status_code = 201;
-            } else {
-                res.status_code = 500;
-                res.body = "<h1>500 Internal Server Error</h1>";
-            }
+            res.status_code = 500;
+            res.body = "<h1>500 Internal Server Error - CGI Failed</h1>";
         }
     }
+    // 📦 Soporte para uploads (multipart/form-data)
+else if (UploadHandler::isUploadRequest(req)) {
+    UploadHandler uploader(req, config);
+    res = uploader.handle();
+}
+    // 🧾 POST normal (sin multipart)
+    else if (writeFileNonBlocking(file_path, req.body)) {
+        res.body = "<h1>File created with POST</h1>";
+        res.status_code = 201;
+    } else {
+        res.status_code = 500;
+        res.body = "<h1>500 Internal Server Error</h1>";
+    }
+}
     else if (req.method == "DELETE") {
         // Verificar que el archivo existe antes de eliminarlo
         if (fileExistsNonBlocking(file_path) && remove(file_path.c_str()) == 0) {
@@ -388,18 +392,49 @@ void WebServer::processClientRequest(int client_fd) {
         res.body = "<h1>405 Method Not Allowed</h1>";
     }
     
-    // Set response headers
-    std::ostringstream oss;
-    oss << res.body.size();
-    res.headers["Content-Length"] = oss.str();
+//     // Set response headers
+//     std::ostringstream oss;
+//     oss << res.body.size();
+//     res.headers["Content-Length"] = oss.str();
     
-    // Solo establecer Content-Type si no fue establecido por CGI
-    if (res.headers.find("Content-Type") == res.headers.end()) {
-        res.headers["Content-Type"] = getContentType(file_path);
+//     // Solo establecer Content-Type si no fue establecido por CGI
+//     if (res.headers.find("Content-Type") == res.headers.end()) {
+//         res.headers["Content-Type"] = getContentType(file_path);
 
-    }
+//     }
     
-    // Send response
-    client->setResponse(res.toString());
-    updatePollEvents(client_fd, POLLOUT);
+//     // Send response
+//     client->setResponse(res.toString());
+//     updatePollEvents(client_fd, POLLOUT);
+// }
+
+// Set response headers
+std::ostringstream oss;
+oss << res.body.size();
+res.headers["Content-Length"] = oss.str();
+
+// ✅ Forzar Content-Type correcto en respuestas HTML
+if (res.headers.find("Content-Type") == res.headers.end()) {
+    // Si el cuerpo contiene HTML, forzamos text/html
+    if (res.body.find("<html") != std::string::npos || 
+        res.body.find("<h1>") != std::string::npos ||
+        res.body.find("<!DOCTYPE html>") != std::string::npos ||
+        res.body.find("<p>") != std::string::npos) {
+        res.headers["Content-Type"] = "text/html; charset=UTF-8";
+    }
+    else {
+        // Intentar detectar tipo desde extensión
+        std::string guessedType = getContentType(file_path);
+        // Evitar tipo binario genérico
+        if (guessedType == "application/octet-stream")
+            res.headers["Content-Type"] = "text/html; charset=UTF-8";
+        else
+            res.headers["Content-Type"] = guessedType;
+    }
 }
+
+// Send response
+client->setResponse(res.toString());
+updatePollEvents(client_fd, POLLOUT);
+}
+
