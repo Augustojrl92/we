@@ -20,7 +20,7 @@ public:
     UploadHandler(const Request& request, const Config& cfg);
     Response handle();
 
-    static bool isUploadRequest(const Request& req);
+    static bool isUploadRequest(const Request& req, bool isUploadEnabled);
 };
 
 #endif

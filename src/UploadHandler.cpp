@@ -1,5 +1,18 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   UploadHandler.cpp                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fmorenil <fmorenil@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/28 20:18:11 by fmorenil          #+#    #+#             */
+/*   Updated: 2025/10/28 20:18:37 by fmorenil         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../includes/UploadHandler.hpp"
 #include "../includes/utils.hpp"
+#include "../includes/webserver.hpp"
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>
@@ -8,18 +21,35 @@
 UploadHandler::UploadHandler(const Request& request, const Config& cfg)
 : req(request), config(cfg) {}
 
-bool UploadHandler::isUploadRequest(const Request& req) {
-    return req.method == "POST" &&
-           req.headers.count("content-type") &&
-           req.headers.at("content-type").find("multipart/form-data") != std::string::npos;
+bool UploadHandler::isUploadRequest(const Request& req, bool isUploadEnabled) {
+    if (!isUploadEnabled) {
+        ERR_PRINT("Upload feature is disabled in server configuration.");
+        return false;
+    }
+    std::map<std::string,std::string>::const_iterator it = req.headers.find("content-type");
+    if (it == req.headers.end()) return false;
+    return it->second.find("multipart/form-data") != std::string::npos;
 }
 
+
 std::string UploadHandler::extractBoundary() const {
-    std::string contentType = req.headers.at("content-type");
+    std::map<std::string,std::string>::const_iterator it = req.headers.find("content-type");
+    if (it == req.headers.end()) return "";
+    const std::string& contentType = it->second;
     size_t pos = contentType.find("boundary=");
     if (pos == std::string::npos) return "";
-    return "--" + contentType.substr(pos + 9);
+    std::string b = contentType.substr(pos + 9); // tras 'boundary='
+    // Saneos opcionales:
+    // - quitar comillas si vienen: boundary="----WebKit..."
+    if (!b.empty() && b[0] == '"') {
+        size_t endq = b.find('"', 1);
+        b = (endq == std::string::npos) ? b.substr(1) : b.substr(1, endq-1);
+    }
+    // - recortar posibles espacios/; finales
+    while (!b.empty() && (b[b.size()-1] == ';' || b[b.size()-1] == ' ')) b.erase(b.size()-1);
+    return "--" + b;
 }
+
 
 std::string UploadHandler::saveFile(const std::string& filename, const std::string& content) const {
     std::string uploadPath = config.getUploadStore();

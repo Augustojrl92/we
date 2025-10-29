@@ -1,49 +1,104 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Upload Successful</title>
+    <link rel="alternate icon" class="js-site-favicon" type="image/png" href="https://cdn-icons-png.freepik.com/512/13643/13643568.png">
+  <title>✅ Subida Exitosa | Webserv 42</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #1e272e, #2f3640);
-      color: #f5f6fa;
+      background: linear-gradient(135deg, #74b9ff, #0984e3);
+      color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
       margin: 0;
+      padding: 20px;
     }
+
     .card {
-      background: rgba(255,255,255,0.08);
-      padding: 2rem 3rem;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0, 168, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 40px;
       text-align: center;
-      width: 380px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+      max-width: 500px;
+      width: 100%;
+      animation: fadeIn 0.8s ease-in-out;
     }
-    h1 { color: #00a8ff; font-size: 2rem; margin-bottom: 1rem; }
-    p { color: #dcdde1; margin: 0.3rem 0; }
+
+    h1 {
+      font-size: 2.2em;
+      color: #ffeaa7;
+      margin-bottom: 1rem;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+
+    p {
+      font-size: 1.1em;
+      margin: 0.5rem 0;
+      color: #ecf0f1;
+    }
+
+    .filename {
+      font-weight: bold;
+      color: #fffa65;
+    }
+
+    .buttons {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
     a {
-      display: inline-block;
-      margin-top: 1rem;
-      background: #00a8ff;
+      background: linear-gradient(45deg, #00cec9, #0984e3);
       color: white;
-      padding: 0.6rem 1.4rem;
-      border-radius: 6px;
+      padding: 12px 28px;
+      border-radius: 25px;
       text-decoration: none;
-      transition: background 0.3s ease;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    a:hover { background: #0097e6; }
+
+    a:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(45deg, #0984e3, #00cec9);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.9rem;
+      color: #dfe6e9;
+      opacity: 0.9;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>✅ Upload Successful</h1>
-    <p>File saved as: <b>{{FILENAME}}</b></p>
-    <p>Size: {{SIZE}} bytes</p>
-    <a href="/upload.html">⬅️ Upload another file</a>
+    <h1>✅ ¡Subida Exitosa!</h1>
+    <p>Archivo guardado como: <span class="filename">{{FILENAME}}</span></p>
+    <p>Tamaño: {{SIZE}} bytes</p>
+
+    <div class="buttons">
+      <a href="/upload.html">⬅️ Subir otro archivo</a>
+      <a href="/index.html">🏠 Volver al inicio</a>
+    </div>
   </div>
+
+  <footer>© 2025 Webserv 42 — Upload system by aurodrig</footer>
 </body>
 </html>

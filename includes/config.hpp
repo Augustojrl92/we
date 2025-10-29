@@ -6,7 +6,7 @@
 /*   By: fmorenil <fmorenil@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/23 16:54:56 by aurodrig          #+#    #+#             */
-/*   Updated: 2025/10/16 22:03:26 by fmorenil         ###   ########.fr       */
+/*   Updated: 2025/10/28 20:20:44 by fmorenil         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@ class Config {
         bool                        getUploadEnable(void) const;
         void                        setUploadStore(std::string _uploadStore);
         std::string                 getUploadStore(void) const;
+        bool                        getUploadEnabled(void) const;
         bool                        load(const std::string& path);
         void                        printConfig(void) const;
 };

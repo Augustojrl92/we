@@ -364,7 +364,7 @@ void WebServer::processClientRequest(int client_fd) {
         }
     }
     // 📦 Soporte para uploads (multipart/form-data)
-else if (UploadHandler::isUploadRequest(req)) {
+else if (UploadHandler::isUploadRequest(req, config.getUploadEnabled())) {
     UploadHandler uploader(req, config);
     res = uploader.handle();
 }
