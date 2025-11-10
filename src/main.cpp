@@ -1,23 +1,22 @@
-// /* ************************************************************************** */
-// /*                                                                            */
-// /*                                                        :::      ::::::::   */
-// /*   main.cpp                                           :+:      :+:    :+:   */
-// /*                                                    +:+ +:+         +:+     */
-// /*   By: aurodrig <aurodrig@student.42.fr>          +#+  +:+       +#+        */
-// /*                                                +#+#+#+#+#+   +#+           */
-// /*   Created: 2025/07/27 14:02:14 by fvizcaya          #+#    #+#             */
-// /*   Updated: 2025/11/07 11:53:42 by aurodrig         ###   ########.fr       */
-// /*                                                                            */
-// /* ************************************************************************** */
-
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: fmorenil <fmorenil@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/27 14:02:14 by fvizcaya          #+#    #+#             */
+/*   Updated: 2025/10/20 15:48:31 by fmorenil         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "../includes/webserver.hpp"
 #include "../includes/CGIHandler.hpp"
 
 int main(int argc, char **argv) {
 
-    std::string config_path;
-    WebServer   server;
+    std::string         config_path;
+    WebServer           server;
     
     if (argc > 1)
         config_path = argv[1];
@@ -28,7 +27,7 @@ int main(int argc, char **argv) {
         configFileParser parser(config_path);
         if (!parser.parseFile()) {
             ERR_PRINT("Error parsing configuration file.");
-            return 1;
+            return (1);
         }
         server.setConfig(parser.getConfig());
     } catch (const std::exception& e) {
@@ -36,14 +35,10 @@ int main(int argc, char **argv) {
         return (1);
     }
     
-    //INF_PRINT("Starting init() on port " << server.getConfig().getListeningPort());
-
-    // Llamada única a init()
-    if (!server.init(server.getConfig().getListeningPort())) {
-        ERR_PRINT("Server initialization failed. Exiting cleanly.");
-        return (1);
-    }
-
+    
+    // Usar puerto del config 
+    server.init(server.getConfig().getListeningPort());
     server.run();
-    return 0;
+
+    return (0);
 }

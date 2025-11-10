@@ -43,9 +43,6 @@ class WebServer {
         std::map<int, Client*>  clients;
         Server                  *server; 
 
-        WebServer(const WebServer&);
-        WebServer& operator=(const WebServer&);
-
     public:
         WebServer();
         ~WebServer();
@@ -61,7 +58,7 @@ class WebServer {
         void updatePollEvents(int client_fd, short events);
         void processClientRequest(int client_fd);
 
-        bool init(int port);
+        void init(int port);
         void run();
 };
 

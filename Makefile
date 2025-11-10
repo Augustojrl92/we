@@ -17,7 +17,9 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iincludes
 SRC = src/main.cpp
 SRC += src/webserver.cpp 
 SRC += src/utils.cpp 
-SRC += src/config.cpp 
+SRC += src/Config.cpp 
+SRC += src/ServerBlockConfig.cpp
+SRC += src/LocationBlockConfig.cpp
 SRC += src/Request.cpp 
 SRC += src/Response.cpp
 SRC += src/Client.cpp

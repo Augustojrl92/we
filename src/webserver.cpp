@@ -55,19 +55,10 @@ WebServer::~WebServer() {
     }
 }
 
-bool WebServer::init(int port) {
-//     static int init_count = 0; REVISAR Y NO OLVIDAR QUITAR
-// ++init_count;
-// INF_PRINT(">>> WebServer::init() called " << init_count << " time(s)");
-
+void WebServer::init(int port) {
     // 🔹 1. Crear el objeto Server (socket + bind + listen)
     server = new Server(port);
-    if (server->getFd() == -1){
-        ERR_PRINT("Server failed to initialize on port " << port);
-        delete server;
-        server = NULL;
-        return false;
-    }
+
     // 🔹 2. Añadir el FD del servidor al vector de poll
     pollfd server_poll;
     server_poll.fd = server->getFd();
@@ -75,7 +66,6 @@ bool WebServer::init(int port) {
     fds.push_back(server_poll);
 
     INF_PRINT("WebServer initialized on port " << port);
-    return true;
 }
 
 
