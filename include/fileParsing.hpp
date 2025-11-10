@@ -13,20 +13,15 @@
 #ifndef _FILE_PARSING_HPP_
 #define _FILE_PARSING_HPP_
 
-#include <webserver.hpp>
-#include <Config.hpp>
-#include <ServerBlockConfig.hpp>
-#include <LocationBlockConfig.hpp>
-#include <utils.hpp>
+#include "../includes/webserver.hpp"
+#include "../includes/config.hpp"
+#include "../includes/utils.hpp"
 #include <string>
 #include <stack>
 #include <vector>
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
-
-#define MAX_SERVER_BLOCKS 1024
-#define MAX_LOCATION_BLOCKS_PER_SERVER 64
 
 typedef enum configFileParserState_e
 {
@@ -39,6 +34,7 @@ typedef enum configFileParserState_e
 typedef enum configFileContext_e
 {
 	FILE_CONTEXT_MAIN_CONTEXT,
+	FILE_CONTEXT_HTTP,
 	FILE_CONTEXT_SERVER,
 	FILE_CONTEXT_LOCATION
 } configFileContext_t;
@@ -58,7 +54,6 @@ typedef enum configFileKeyword_e
 	FILE_KEYWORD_UNKNOWN,
 	FILE_KEYWORD_HTTP,
 	FILE_KEYWORD_LISTEN,
-	FILE_KEYWORD_IFACE,
 	FILE_KEYWORD_ROOT,
 	FILE_KEYWORD_INDEX,
 	FILE_KEYWORD_ERROR_PAGE,
@@ -71,50 +66,35 @@ typedef enum configFileKeyword_e
 	FILE_KEYWORD_UPLOAD_STORE
 } configFileKeyword_t;
 
-typedef enum configFileError_e
-{
-	FILE_ERROR_OK,
-	FILE_ERROR_NO_SERVER_BLOCKS,
-	FILE_ERROR_NESTED_SERVER_BLOCKS,
-	FILE_ERROR_NESTED_LOCATION_BLOCKS,
-	FILE_ERROR_TOO_MANY_SERVER_BLOCKS,
-	FILE_ERROR_TOO_MANY_LOCATION_BLOCKS
-} configFileError_t;
-
 class configFileParser
 {
 	private:
-		Config							*serverConfig;
+		Config							serverConfig;
 		configFileParserState_t 		currentState;
 		configFileKeyword_t				currentKeyword;
 		std::stack<configFileContext_t> contextStack;
 		std::vector<configFileToken_t> 	tokenVector;
 		std::ifstream 					configFile;
 		int32_t 						numServerBlocks;
-		int32_t 						numLocationBlocks;
 		std::string						filePath;
-		void 							tokenizeLineServerBlock(const std::string& line, ServerBlock& currentServerBlock);
-		void 							tokenizeLineLocationBlock(const std::string& line, LocationBlock& currentLocationBlock);
+		void 							tokenizeLine(const std::string& line);
 		void 							handleContext(const std::string& token);
 		void 							setCurrentContext(configFileContext_t context);
 		configFileToken_t 				getTokenType(const std::string& token);
 		configFileKeyword_t 			getKeywordType(const std::string& token);
 		void 							setCurrentState(configFileParserState_t _currentState);
 		configFileParserState_t 		getCurrentState(void);
-		bool 							handleError(std::string& errorMsg);
-		configFileError_t				configSanityCheckAndBlocksCount(std::istream &fileStream, int &serverCount, std::vector<int> &locationCounts);
+		void 							handleError(std::string& errorMsg);
 
 	public:
-		configFileParser();
+		configFileParser(std::string& filePath);
 		~configFileParser();
 		
-		void					setConfigPointer(Config* _serverConfig);
-		void 					setFilePath(const std::string& path);
-		bool 					parseFile(void);
-		configFileContext_t 	getCurrentContext(void);
-		int32_t					getServerBlocks(void);
+		bool 				parseFile(void);
+		configFileContext_t getCurrentContext(void);
+		int 				countServerBlocks(void);
 
-		const Config&			getConfig(int serverBlockIndex) const;
+		const Config&		getConfig(void) const;
 };
 
 #endif /* _FILE_PARSING_HPP_ */
