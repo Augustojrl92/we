@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Client.hpp"
-#include "webserver.hpp"
+#include <Client.hpp>
+#include <Webserver.hpp>
 
 Client::Client(int client_fd) : fd(client_fd), request_completed(false), response_ready(false), bytes_sent(0) {}
 

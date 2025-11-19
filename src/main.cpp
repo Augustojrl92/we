@@ -11,8 +11,9 @@
 // /* ************************************************************************** */
 
 
-#include "../includes/webserver.hpp"
-#include "../includes/CGIHandler.hpp"
+#include <Config.hpp>
+#include <FileParsing.hpp>
+#include <Webserver.hpp>
 
 int main(int argc, char **argv) {
 
@@ -23,27 +24,33 @@ int main(int argc, char **argv) {
         config_path = argv[1];
     else
         config_path = "config/default.conf";
-    
+
     try {
-        configFileParser parser(config_path);
+        configFileParser parser;
+		parser.setFilePath(config_path);
+		parser.setConfigObject(server.getServerConfig());
         if (!parser.parseFile()) {
             ERR_PRINT("Error parsing configuration file.");
             return 1;
         }
-        server.setConfig(parser.getConfig());
+		server.getServerConfig().printConfig();
     } catch (const std::exception& e) {
-        ERR_PRINT("❌ Exception: " + std::string(e.what()));
+        ERR_PRINT("Exception: " + std::string(e.what()));
         return (1);
     }
     
-    //INF_PRINT("Starting init() on port " << server.getConfig().getListeningPort());
-
-    // Llamada única a init()
-    if (!server.init(server.getConfig().getListeningPort())) {
+    if (server.getServerConfig().getNumServerBlocks() == 0) {
+        ERR_PRINT("No server blocks configured.");
+        return 1;
+    }
+    
+    INF_PRINT("Starting initMultipleServers() for all configured servers");
+    if (!server.initMultipleServers()) {
         ERR_PRINT("Server initialization failed. Exiting cleanly.");
         return (1);
     }
 
     server.run();
+    std::cout << "Server setup complete. Exiting." << std::endl;
     return 0;
 }

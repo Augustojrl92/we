@@ -10,38 +10,47 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/webserver.hpp"
-#include "../includes/utils.hpp"
-#include "../includes/Request.hpp"
-#include "../includes/Response.hpp"
-#include "../includes/CGIHandler.hpp"
+#include <Webserver.hpp>
+#include <utils.hpp>
+#include <Request.hpp>
+#include <Response.hpp>
+#include <CGIHandler.hpp>
+#include <Config.hpp>
+#include <UploadHandler.hpp>
 
-#include <cstring> // memset
-#include <cstdlib> // exit, EXIT_FAILURE
-#include <cstdio>  // perror
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 #include <sstream>
 #include <vector>
 #include <fstream>
-#include "../includes/config.hpp"
-#include "../includes/UploadHandler.hpp"
+#include <set>
 
 
 bool WebServer::loadConfig(const std::string &path)
 {
-    return config.load(path);
+    configFileParser parser;
+    parser.setFilePath(path);
+    parser.setConfigObject(serverConfig);
+    return (parser.parseFile());
+}
+
+const Config& WebServer::getConfig() const
+{
+    return (serverConfig);
 }
 
 void WebServer::setConfig(const Config &newConfig)
 {
-    config = newConfig;
+    serverConfig = newConfig;
 }
 
-const Config &WebServer::getConfig() const
+Config &WebServer::getServerConfig(void)
 {
-    return config;
+    return serverConfig;
 }
 
-WebServer::WebServer() : server(NULL) {}
+WebServer::WebServer() {}
 
 WebServer::~WebServer() {
     for (std::map<int, Client*>::iterator it = clients.begin(); 
@@ -50,37 +59,174 @@ WebServer::~WebServer() {
     }
     clients.clear();
     
-    if (server) {
-        delete server;
+    for (size_t i = 0; i < servers.size(); ++i) {
+        delete servers[i];
     }
+    servers.clear();
 }
 
-bool WebServer::init(int port) {
-//     static int init_count = 0; REVISAR Y NO OLVIDAR QUITAR
-// ++init_count;
-// INF_PRINT(">>> WebServer::init() called " << init_count << " time(s)");
-
-    // 🔹 1. Crear el objeto Server (socket + bind + listen)
-    server = new Server(port);
-    if (server->getFd() == -1){
-        ERR_PRINT("Server failed to initialize on port " << port);
-        delete server;
-        server = NULL;
+bool WebServer::initMultipleServers() {
+    if (serverConfig.getNumServerBlocks() == 0) {
+        ERR_PRINT("No server blocks configured.");
         return false;
     }
-    // 🔹 2. Añadir el FD del servidor al vector de poll
-    pollfd server_poll;
-    server_poll.fd = server->getFd();
-    server_poll.events = POLLIN;
-    fds.push_back(server_poll);
-
-    INF_PRINT("WebServer initialized on port " << port);
+    
+    std::set<int> uniquePorts;
+    
+    // 🔹 1. Identificar puertos únicos y crear servidores
+    for (int i = 0; i < serverConfig.getNumServerBlocks(); i++) {
+        const ServerBlock& block = serverConfig.getServerBlockIndex(i);
+        int port = block.getListeningPort();
+        
+        // Solo crear un servidor por puerto único
+        if (uniquePorts.find(port) == uniquePorts.end()) {
+            uniquePorts.insert(port);
+            
+            Server* newServer = new Server(port);
+            if (newServer->getFd() == -1) {
+                ERR_PRINT("Server failed to initialize on port " << port);
+                delete newServer;
+                return false;
+            }
+            
+            servers.push_back(newServer);
+            fdToServerIndex[newServer->getFd()] = servers.size() - 1;
+            
+            // 🔹 2. Añadir al vector de poll
+            pollfd server_poll;
+            server_poll.fd = newServer->getFd();
+            server_poll.events = POLLIN;
+            fds.push_back(server_poll);
+            
+            INF_PRINT("Server initialized on port " << port << " (fd=" << newServer->getFd() << ")");
+        }
+    }
+    
+    INF_PRINT("Total servers initialized: " << servers.size());
     return true;
+}
+
+bool WebServer::isListenerSocket(int fd) const {
+    return fdToServerIndex.find(fd) != fdToServerIndex.end();
+}
+
+const ServerBlock& WebServer::selectServerBlock(int listener_fd, const Request& req) const {
+    // 1. Encontrar todos los ServerBlocks que escuchan en este puerto
+    Server* currentServer = NULL;
+    std::map<int, int>::const_iterator serverIt = fdToServerIndex.find(listener_fd);
+    if (serverIt != fdToServerIndex.end()) {
+        currentServer = servers[serverIt->second];
+    }
+    
+    if (!currentServer) {
+        // Fallback al primer server block si hay problemas
+        return serverConfig.getServerBlockIndex(0);
+    }
+    
+    int currentPort = currentServer->getPort();
+    
+    // 2. Buscar ServerBlocks que coincidan con este puerto
+    std::vector<int> candidateServers;
+    for (int i = 0; i < serverConfig.getNumServerBlocks(); i++) {
+        const ServerBlock& block = serverConfig.getServerBlockIndex(i);
+        if (block.getListeningPort() == currentPort) {
+            candidateServers.push_back(i);
+        }
+    }
+    
+    if (candidateServers.empty()) {
+        return serverConfig.getServerBlockIndex(0);
+    }
+    
+    // 3. Si hay Host header, buscar coincidencia con server_name
+    std::map<std::string, std::string>::const_iterator hostIt = req.headers.find("host");
+    if (hostIt != req.headers.end()) {
+        std::string hostHeader = hostIt->second;
+        
+        // Remover puerto del Host header si existe (ej: "localhost:8080" -> "localhost")
+        size_t colonPos = hostHeader.find(':');
+        if (colonPos != std::string::npos) {
+            hostHeader = hostHeader.substr(0, colonPos);
+        }
+        
+        // Buscar coincidencia exacta con server_name
+        for (size_t i = 0; i < candidateServers.size(); i++) {
+            const ServerBlock& block = serverConfig.getServerBlockIndex(candidateServers[i]);
+            const std::vector<std::string>& serverNames = block.getServerName();
+            
+            for (size_t j = 0; j < serverNames.size(); j++) {
+                if (serverNames[j] == hostHeader) {
+                    DBG_PRINT("Selected server by host match: " << hostHeader << " (port " << currentPort << ")");
+                    return block;
+                }
+            }
+        }
+    }
+    
+    // 4. Fallback: usar el primer ServerBlock de este puerto
+    const ServerBlock& fallbackBlock = serverConfig.getServerBlockIndex(candidateServers[0]);
+    DBG_PRINT("Selected fallback server for port " << currentPort);
+    return fallbackBlock;
+}
+
+EffectiveConfig WebServer::mergeConfigurations(const ServerBlock& server, const LocationBlock* location) const {
+    EffectiveConfig config;
+    
+    // Start with server configuration as base
+    config.documentRoot = server.getDocumentRoot();
+    config.indexPath = server.getIndexPath();
+    config.allowMethods = server.getAllowMethods();
+    config.clientMaxBodySize = server.getClientMaxBodySize();
+    config.autoIndex = server.getAutoIndex();
+    config.uploadEnable = server.getUploadEnable();
+    config.uploadStore = server.getUploadStore();
+    config.cgiPass = server.getCgiPass();
+    config.errorPageMap = server.getErrorPageMap();
+    
+    // Override with location configuration if present
+    if (location) {
+        DBG_PRINT("Applying location block overrides for path: " << location->getLocationPath());
+        
+        // Override only non-empty/non-default values from location
+        if (!location->getDocumentRoot().empty()) {
+            config.documentRoot = location->getDocumentRoot();
+        }
+        if (!location->getIndexPath().empty()) {
+            config.indexPath = location->getIndexPath();
+        }
+        if (!location->getAllowMethods().empty()) {
+            config.allowMethods = location->getAllowMethods();
+        }
+        if (!location->getClientMaxBodySize().empty()) {
+            config.clientMaxBodySize = location->getClientMaxBodySize();
+        }
+        // Location can override boolean values
+        if (location->getAutoIndex() != server.getAutoIndex()) {
+            config.autoIndex = location->getAutoIndex();
+        }
+        if (location->getUploadEnable() != server.getUploadEnable()) {
+            config.uploadEnable = location->getUploadEnable();
+        }
+        if (!location->getUploadStore().empty()) {
+            config.uploadStore = location->getUploadStore();
+        }
+        if (!location->getCgiPass().empty()) {
+            config.cgiPass = location->getCgiPass();
+        }
+        // Merge error pages (location overrides server)
+        const std::map<int, std::string>& locationErrors = location->getErrorPageMap();
+        for (std::map<int, std::string>::const_iterator it = locationErrors.begin(); 
+             it != locationErrors.end(); ++it) {
+            config.errorPageMap[it->first] = it->second;
+        }
+    }
+    
+    return config;
 }
 
 
 void WebServer::run() {
-    INF_PRINT("Server running on port " << server->getPort());
+    INF_PRINT("Server running with " << servers.size() << " listeners");
 
     while (true) {
         int activity = poll(fds.data(), fds.size(), -1);
@@ -96,7 +242,7 @@ void WebServer::run() {
         for (int i = fds.size() - 1; i >= 0; i--) {
             // Check for errors or hangup first
             if (fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
-                if (fds[i].fd != server->getFd()) {
+                if (!isListenerSocket(fds[i].fd)) {
                     // Client connection has an error
                     DBG_PRINT("Client connection error/hangup: fd=" << fds[i].fd);
                     cleanupClient(fds[i].fd);
@@ -105,9 +251,9 @@ void WebServer::run() {
             }
             
             if (fds[i].revents & POLLIN) {
-                if (fds[i].fd == server->getFd()) {
-                    // New connection
-                    handleNewConnection();
+                if (isListenerSocket(fds[i].fd)) {
+                    // New connection on one of our listeners
+                    handleNewConnection(fds[i].fd);
                 } else {
                     // Data from existing client
                     handleClientData(fds[i].fd);
@@ -128,23 +274,34 @@ void WebServer::run() {
     }
 }
 
-void WebServer::handleNewConnection()
+void WebServer::handleNewConnection(int listener_fd)
 {
-    int client_fd = server->acceptClient();
+    // Encontrar el servidor correspondiente a este listener
+    std::map<int, int>::iterator it = fdToServerIndex.find(listener_fd);
+    if (it == fdToServerIndex.end()) {
+        ERR_PRINT("Unknown listener fd: " << listener_fd);
+        return;
+    }
+    
+    Server* currentServer = servers[it->second];
+    int client_fd = currentServer->acceptClient();
     if (client_fd < 0) {
-        ERR_PRINT("Failed to accept new client");
+        ERR_PRINT("Failed to accept new client on port " << currentServer->getPort());
         return;
     }
 
     // Crear nuevo cliente
     Client *new_client = new Client(client_fd);
     clients[client_fd] = new_client;
+    
+    // Asociar cliente con su listener para futuras consultas
+    clientToListener[client_fd] = listener_fd;
 
     // Añadir a polling
     pollfd client_poll = {client_fd, POLLIN, 0};
     fds.push_back(client_poll);
 
-    DBG_PRINT("New client connected: fd " << client_fd);
+    DBG_PRINT("New client connected: fd " << client_fd << " on port " << currentServer->getPort());
 }
 
 void WebServer::handleClientData(int client_fd)
@@ -196,6 +353,9 @@ void WebServer::cleanupClient(int client_fd)
         delete it->second; // Esto cerrará el fd automáticamente
         clients.erase(it);
     }
+    
+    // Limpiar el tracking de listener
+    clientToListener.erase(client_fd);
 
     for (size_t i = 0; i < fds.size(); i++)
     {
@@ -225,12 +385,42 @@ void WebServer::processClientRequest(int client_fd) {
     Client* client = clients[client_fd];
     if (!client) return;
     
+    if (serverConfig.getNumServerBlocks() == 0) {
+        ERR_PRINT("No server blocks configured.");
+        return;
+    }
+    
     std::string request_str = client->getRequest();
     DBG_PRINT("Processing request for fd=" << client_fd);
     
     // Parse request using Request class
     Request req;
     req.parse(request_str);
+    
+    // 🔹 SELECCIÓN DINÁMICA DE SERVIDOR VIRTUAL
+    // Encontrar qué listener aceptó este cliente
+    std::map<int, int>::iterator listenerIt = clientToListener.find(client_fd);
+    if (listenerIt == clientToListener.end()) {
+        ERR_PRINT("Could not find listener for client " << client_fd);
+        return;
+    }
+    int listener_fd = listenerIt->second;
+    
+    // Seleccionar el ServerBlock apropiado según puerto y Host header
+    const ServerBlock& selectedBlock = selectServerBlock(listener_fd, req);
+    DBG_PRINT("Selected server block for port " << selectedBlock.getListeningPort());
+    
+    // 🔹 LOCATION BLOCK MATCHING
+    // Encontrar el location block más específico para este path
+    const LocationBlock* matchedLocation = selectedBlock.findBestLocationMatch(req.path);
+    if (matchedLocation) {
+        DBG_PRINT("Matched location block: " << matchedLocation->getLocationPath());
+    } else {
+        DBG_PRINT("No location block matched, using server defaults");
+    }
+    
+    // Merge server and location configurations
+    EffectiveConfig effectiveConfig = mergeConfigurations(selectedBlock, matchedLocation);
     
     // Handle chunked encoding if present
     if (req.headers.count("transfer-encoding") &&
@@ -264,9 +454,9 @@ void WebServer::processClientRequest(int client_fd) {
     
     std::string file_path;
     if (clean_path == "/")
-        file_path = config.getDocumentRoot() + "/" + config.getIndexPath();
+        file_path = effectiveConfig.documentRoot + "/" + effectiveConfig.indexPath;
     else
-        file_path = config.getDocumentRoot() + clean_path;
+        file_path = effectiveConfig.documentRoot + clean_path;
     
     Response res;
     
@@ -374,8 +564,8 @@ void WebServer::processClientRequest(int client_fd) {
         }
     }
     // 📦 Soporte para uploads (multipart/form-data)
-else if (UploadHandler::isUploadRequest(req, config.getUploadEnabled())) {
-    UploadHandler uploader(req, config);
+else if (UploadHandler::isUploadRequest(req, effectiveConfig.uploadEnable)) {
+    UploadHandler uploader(req, selectedBlock);  // TODO: Crear versión con EffectiveConfig
     res = uploader.handle();
 }
     // 🧾 POST normal (sin multipart)
@@ -447,4 +637,3 @@ if (res.headers.find("Content-Type") == res.headers.end()) {
 client->setResponse(res.toString());
 updatePollEvents(client_fd, POLLOUT);
 }
-

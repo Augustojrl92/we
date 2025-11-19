@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/utils.hpp"
-#include "../includes/webserver.hpp"
+#include <utils.hpp>
+
 #include <algorithm>
 #include <sstream>
 #include <fstream>

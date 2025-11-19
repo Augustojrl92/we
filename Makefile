@@ -3,29 +3,30 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: aurodrig <aurodrig@student.42.fr>          +#+  +:+       +#+         #
+#    By: fvizcaya <fvizcaya@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/07/27 15:55:23 by fvizcaya          #+#    #+#              #
-#    Updated: 2025/10/23 23:44:21 by aurodrig         ###   ########.fr        #
+#    Updated: 2025/11/11 21:36:35 by fvizcaya         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = webserv
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iincludes
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinclude
 
 SRC = src/main.cpp
-SRC += src/webserver.cpp 
+SRC += src/Webserver.cpp 
 SRC += src/utils.cpp 
-SRC += src/config.cpp 
+SRC += src/Config.cpp 
 SRC += src/Request.cpp 
 SRC += src/Response.cpp
 SRC += src/Client.cpp
 SRC += src/CGIHandler.cpp
-SRC += src/config/fileParsing.cpp
+SRC += src/FileParsing.cpp
 SRC += src/Server.cpp
 SRC += src/UploadHandler.cpp
-#SRC += src/test_cgi.cpp
+SRC += src/ServerBlockConfig.cpp
+SRC += src/LocationBlockConfig.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

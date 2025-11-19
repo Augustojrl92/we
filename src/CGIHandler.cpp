@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/CGIHandler.hpp"
-#include "../includes/Request.hpp"
-#include "../includes/webserver.hpp"
+#include <CGIHandler.hpp>
+#include <Request.hpp>
+#include <Webserver.hpp>
 #include <iostream>
 #include <sstream>
 #include <algorithm>

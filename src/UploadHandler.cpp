@@ -10,16 +10,16 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/UploadHandler.hpp"
-#include "../includes/utils.hpp"
-#include "../includes/webserver.hpp"
+#include <UploadHandler.hpp>
+#include <utils.hpp>
+#include <Webserver.hpp>
 #include <sstream>
 #include <iostream>
 #include <sys/stat.h>
 
 
-UploadHandler::UploadHandler(const Request& request, const Config& cfg)
-: req(request), config(cfg) {}
+UploadHandler::UploadHandler(const Request& request, const ServerBlock& cfg)
+: req(request), serverBlock(cfg) {}
 
 bool UploadHandler::isUploadRequest(const Request& req, bool isUploadEnabled) {
     if (!isUploadEnabled) {
@@ -52,7 +52,7 @@ std::string UploadHandler::extractBoundary() const {
 
 
 std::string UploadHandler::saveFile(const std::string& filename, const std::string& content) const {
-    std::string uploadPath = config.getUploadStore();
+    std::string uploadPath = serverBlock.getUploadStore();
     if (uploadPath.empty()) uploadPath = "www/uploads";
 
     mkdir(uploadPath.c_str(), 0755); // asegura que exista la carpeta

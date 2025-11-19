@@ -10,12 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../includes/webserver.hpp"
+#include <Webserver.hpp>
 #include <cstring>    // memset
 #include <cstdlib>    // exit
 #include <cstdio>     // perror
 #include <arpa/inet.h>
-#include "../includes/Server.hpp"
+#include <Server.hpp>
 #include <fcntl.h>  // para fcntl()
 
 Server::Server(int port) : port(port) {
